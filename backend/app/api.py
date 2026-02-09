@@ -7,8 +7,9 @@ from pathlib import Path
 import sqlite3
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 
-from fingerprinter import Fingerprinter
+from fingerprinter import Fingerprinter, load_wav_mono
 from matcher import find_best_match
 from storage import init_db, insert_song
 
@@ -18,6 +19,15 @@ DB_PATH = Path("fingerprints.db")
 FINGERPRINTER = Fingerprinter()
 
 init_db(DB_PATH)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 
 def _save_upload_to_temp(upload: UploadFile) -> Path:
@@ -58,6 +68,8 @@ def identify_song_endpoint(
 ) -> dict:
     tmp_path = _save_upload_to_temp(file)
     try:
+        sample_rate, mono = load_wav_mono(tmp_path)
+        recording_length = mono.size / sample_rate if sample_rate > 0 else 0.0
         song_id, timestamp, certainty = find_best_match(
             wav_path=tmp_path,
             db_path=DB_PATH,
@@ -70,10 +82,12 @@ def identify_song_endpoint(
 
     if song_id is None:
         return {"match": None}
+
+    adjusted_timestamp = timestamp + recording_length
     return {
         "match": {
             "song_id": song_id,
-            "timestamp_seconds": timestamp,
+            "timestamp_seconds": adjusted_timestamp,
             "certainty": certainty,
         }
     }

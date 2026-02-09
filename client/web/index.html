@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audio Fingerprinting Demo</title>
+        <link rel="stylesheet" href="./styles.css" />
+
+  </head>
+  <body>
+    <div class="container">
+      <h1>Audio Fingerprinting Demo</h1>
+      <p>Record a short clip and identify the song using the backend.</p>
+
+      <div class="row">
+        <button id="toggleBtn">Listen for music</button>
+      </div>
+
+      <div class="match-label">Match Result</div>
+      <div class="match-card" style="position: relative;">
+        <div class="confetti" id="confetti"></div>
+        <div class="match-top">
+          <div class="hero-song" id="songValue">--</div>
+          <div class="badge" id="matchBadge"></div>
+        </div>
+        <div class="hero-meta">
+          <span id="timeValue">Timestamp: --</span>
+        </div>
+        <div class="confidence-wrap">
+          <div class="confidence-label" id="confidenceValue">Confidence: --%</div>
+          <div class="confidence-track"><div id="confidenceFill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bars-wrap" id="bars"></div>
+
+    <script src="./config.js"></script>
+        <script src="./app.js"></script>
+
+  </body>
+</html>
