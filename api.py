@@ -6,8 +6,9 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
-from identify_song import find_best_match
-from insert_song import Fingerprinter, insert_song
+from fingerprinter import Fingerprinter
+from matcher import find_best_match
+from storage import insert_song
 
 app = FastAPI(title="Audio Fingerprinting API")
 

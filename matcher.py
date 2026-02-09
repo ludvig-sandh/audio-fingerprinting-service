@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from pathlib import Path
 
-from insert_song import Fingerprinter, fingerprint_hash
+from fingerprinter import Fingerprinter, fingerprint_hash
 from tqdm import tqdm
 
 
@@ -73,8 +73,13 @@ def find_best_match(
 
     if best_song is None:
         return (None, 0.0, 0.0)
-
+    
     timestamp_seconds = best_time_bin * time_bin_size
-    certainty = best_count / second_best if second_best > 0 else float("inf")
+    if best_count + second_best == 0:
+        certainty = 0
+    else:
+        certainty = (best_count / (best_count + second_best)) * 100.0
+        if best_count < 100:
+            certainty *= best_count / 100.0
+        certainty = int(round(certainty))
     return (best_song, timestamp_seconds, certainty)
-
