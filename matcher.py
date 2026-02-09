@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
+import sqlite3
 
 from fingerprinter import Fingerprinter, fingerprint_hash
 from tqdm import tqdm
@@ -34,30 +35,29 @@ def find_best_match(
     if not db_path.exists():
         return (None, 0.0, 0.0)
 
-    with db_path.open("r", encoding="utf-8") as f:
-        for line in tqdm(f, desc="Matching fingerprints"):
-            parts = line.strip().split("\t")
-            if len(parts) != 3:
-                continue
-            h_str, song_id, t_str = parts
-            try:
-                h_db = int(h_str)
-                t_db = float(t_str)
-            except ValueError:
-                continue
-
-            # Compare against all sample hashes with matching hash
-            for h_sample, t_sample in sample_hashes:
-                if h_sample != h_db:
-                    continue
-                delta = t_db - t_sample
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        for h_sample, t_sample in tqdm(sample_hashes, desc="Matching fingerprints"):
+            cur = conn.execute(
+                "SELECT song_id, t_anchor FROM fingerprints WHERE hash = ?",
+                (h_sample,),
+            )
+            for row in cur:
+                delta = row["t_anchor"] - t_sample
                 time_bin = int(delta / time_bin_size)
-                song_bins[song_id][time_bin] += 1
+                song_bins[str(row["song_id"])][time_bin] += 1
 
     best_song = None
     best_count = 0
     best_time_bin = 0
     second_best = 0
+
+    song_name_lookup: dict[str, str] = {}
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        cur = conn.execute("SELECT id, name FROM songs")
+        for row in cur:
+            song_name_lookup[str(row["id"])] = row["name"]
 
     for song_id, bins in song_bins.items():
         if not bins:
@@ -82,4 +82,5 @@ def find_best_match(
         if best_count < 100:
             certainty *= best_count / 100.0
         certainty = int(round(certainty))
-    return (best_song, timestamp_seconds, certainty)
+    song_name = song_name_lookup.get(best_song, best_song)
+    return (song_name, timestamp_seconds, certainty)

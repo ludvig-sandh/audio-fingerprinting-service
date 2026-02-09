@@ -4,16 +4,20 @@ import shutil
 import tempfile
 from pathlib import Path
 
+import sqlite3
+
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from fingerprinter import Fingerprinter
 from matcher import find_best_match
-from storage import insert_song
+from storage import init_db, insert_song
 
 app = FastAPI(title="Audio Fingerprinting API")
 
-DB_PATH = Path("fingerprints.txt")
+DB_PATH = Path("fingerprints.db")
 FINGERPRINTER = Fingerprinter()
+
+init_db(DB_PATH)
 
 
 def _save_upload_to_temp(upload: UploadFile) -> Path:
@@ -80,13 +84,16 @@ def list_songs() -> dict:
     if not DB_PATH.exists():
         return {"songs": []}
 
-    songs: set[str] = set()
-    with DB_PATH.open("r", encoding="utf-8") as f:
-        for line in f:
-            parts = line.strip().split("\t")
-            if len(parts) != 3:
-                continue
-            _, song_id, _ = parts
-            if song_id:
-                songs.add(song_id)
-    return {"songs": sorted(songs)}
+    songs: list[dict] = []
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cur = conn.execute("SELECT id, name, length_seconds FROM songs ORDER BY name")
+        for row in cur:
+            songs.append(
+                {
+                    "id": row["id"],
+                    "name": row["name"],
+                    "length_seconds": row["length_seconds"],
+                }
+            )
+    return {"songs": songs}
