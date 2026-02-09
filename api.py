@@ -73,3 +73,20 @@ def identify_song_endpoint(
             "certainty": certainty,
         }
     }
+
+
+@app.get("/songs")
+def list_songs() -> dict:
+    if not DB_PATH.exists():
+        return {"songs": []}
+
+    songs: set[str] = set()
+    with DB_PATH.open("r", encoding="utf-8") as f:
+        for line in f:
+            parts = line.strip().split("\t")
+            if len(parts) != 3:
+                continue
+            _, song_id, _ = parts
+            if song_id:
+                songs.add(song_id)
+    return {"songs": sorted(songs)}
