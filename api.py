@@ -97,3 +97,20 @@ def list_songs() -> dict:
                 }
             )
     return {"songs": songs}
+
+
+@app.delete("/songs/{song_id}")
+def delete_song(song_id: int) -> dict:
+    if not DB_PATH.exists():
+        raise HTTPException(status_code=404, detail="Database not found.")
+
+    with sqlite3.connect(DB_PATH) as conn:
+        cur = conn.execute("SELECT id FROM songs WHERE id = ?", (song_id,))
+        row = cur.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Song not found.")
+
+        conn.execute("DELETE FROM fingerprints WHERE song_id = ?", (song_id,))
+        conn.execute("DELETE FROM songs WHERE id = ?", (song_id,))
+
+    return {"deleted_song_id": song_id}
