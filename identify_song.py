@@ -78,31 +78,3 @@ def find_best_match(
     certainty = best_count / second_best if second_best > 0 else float("inf")
     return (best_song, timestamp_seconds, certainty)
 
-
-def main() -> None:
-    db_path = Path("fingerprints.txt")
-    fingerprinter = Fingerprinter()
-
-    wav_paths = [
-        # Insert song paths here
-    ]
-
-    for wav_path in wav_paths:
-        if not wav_path.exists():
-            raise FileNotFoundError(
-                f"Missing WAV file at {wav_path.resolve()} - update wav_path."
-            )
-        song_id, timestamp, certainty = find_best_match(
-            wav_path, db_path, fingerprinter=fingerprinter
-        )
-        if song_id is None:
-            print(f"No match found for {wav_path.stem}.")
-        else:
-            print(
-                f"Best match for {wav_path.stem}: {song_id} @ {timestamp:.2f}s "
-                f"(certainty {certainty:.2f})"
-            )
-
-
-if __name__ == "__main__":
-    main()

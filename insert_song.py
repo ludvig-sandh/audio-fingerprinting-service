@@ -251,22 +251,3 @@ def insert_song(
         song_id=song_id,
     )
 
-
-def main() -> None:
-    # Hardcode a local path to a .wav file
-    db_path = Path("fingerprints.txt")
-    fingerprinter = Fingerprinter()
-
-    wav_paths = [
-        # Insert song paths here
-    ]
-
-    total = 0
-    for wav_path in wav_paths:
-        count = insert_song(wav_path, db_path, fingerprinter=fingerprinter)
-        total += count
-        print(f"Appended {count} fingerprints for {wav_path.stem}")
-    print(f"Total appended: {total} -> {db_path.resolve()}")
-
-if __name__ == "__main__":
-    main()
