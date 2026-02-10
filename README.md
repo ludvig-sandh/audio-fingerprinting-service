@@ -111,13 +111,13 @@ The frontend records audio, sends it to `/identify`, and displays the match resu
 
 ### Configure API URL
 
-Edit `client/web/config.js` to point to your own backend:
+Edit `client/web/config.js` to point to your backend API:
 
 ```js
-window.API_BASE = "http://127.0.0.1:8000";
+window.API_BASE = "https://YOUR_BACKEND_URL_HERE";
 ```
 
-Do **not** commit `config.js` (it’s ignored). Use `config.example.js` as a template.
+This file is committed so the demo works out of the box. Change it to your own backend URL if you deploy separately.
 
 ### Run Locally
 

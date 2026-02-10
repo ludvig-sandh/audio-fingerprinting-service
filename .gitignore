@@ -202,8 +202,6 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
-# Frontend config
-client/web/config.js
 
 # Marimo
 marimo/_static/
