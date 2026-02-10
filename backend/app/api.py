@@ -49,6 +49,18 @@ def insert_song_endpoint(
 ) -> dict:
     tmp_path = _save_upload_to_temp(file)
     try:
+        sample_rate, mono = load_wav_mono(tmp_path)
+        duration_seconds = mono.size / sample_rate if sample_rate > 0 else 0.0
+        if duration_seconds < 60:
+            raise HTTPException(
+                status_code=400,
+                detail="Song is too short. Minimum length is 1 minute.",
+            )
+        if duration_seconds > 300:
+            raise HTTPException(
+                status_code=400,
+                detail="Song is too long. Max length is 5 minutes.",
+            )
         count = insert_song(
             wav_path=tmp_path,
             db_path=DB_PATH,
@@ -71,6 +83,11 @@ def identify_song_endpoint(
     try:
         sample_rate, mono = load_wav_mono(tmp_path)
         recording_length = mono.size / sample_rate if sample_rate > 0 else 0.0
+        if recording_length > 15:
+            raise HTTPException(
+                status_code=400,
+                detail="Sample is too long. Max length is 15 seconds.",
+            )
         song_id, timestamp, certainty = find_best_match(
             wav_path=tmp_path,
             db_path=DB_PATH,
