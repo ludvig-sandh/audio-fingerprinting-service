@@ -181,6 +181,36 @@
         background: linear-gradient(90deg, var(--accent-2), var(--accent));
         transition: width 0.2s ease;
       }
+      .songs-section {
+        margin-top: 18px;
+      }
+      .songs-title {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        color: var(--muted);
+        margin-bottom: 10px;
+      }
+      .songs-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .songs-list li {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #efe8fb;
+        color: #3a245f;
+        font-size: 12px;
+        border: 1px solid #e1d6f4;
+      }
+      .songs-empty {
+        color: var(--muted);
+        font-size: 12px;
+      }
 
       .bars-wrap {
         position: fixed;

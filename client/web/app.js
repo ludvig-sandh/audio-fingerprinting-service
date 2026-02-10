@@ -10,6 +10,8 @@ const bars = document.getElementById("bars");
 
 const matchBadge = document.getElementById("matchBadge");
 const confetti = document.getElementById("confetti");
+const songsList = document.getElementById("songsList");
+const songsEmpty = document.getElementById("songsEmpty");
 
 let audioContext;
 let mediaStream;
@@ -23,6 +25,30 @@ let isRecording = false;
 let displayTimer = null;
 let displayBaseTime = 0;
 let displayStart = 0;
+
+async function fetchSongs() {
+  if (!songsList || !songsEmpty) return;
+  try {
+    songsEmpty.textContent = "Loading...";
+    const url = apiBase ? `${apiBase}/songs` : "/songs";
+    const res = await fetch(url);
+    const data = await res.json();
+    const songs = data.songs || [];
+    songsList.innerHTML = "";
+    if (!songs.length) {
+      songsEmpty.textContent = "No songs yet.";
+      return;
+    }
+    songsEmpty.textContent = "";
+    for (const song of songs) {
+      const li = document.createElement("li");
+      li.textContent = song.name || song.song_id || String(song);
+      songsList.appendChild(li);
+    }
+  } catch (err) {
+    songsEmpty.textContent = "Failed to load songs.";
+  }
+}
 
 function floatTo16BitPCM(float32Array) {
   const buffer = new ArrayBuffer(float32Array.length * 2);
@@ -109,6 +135,9 @@ function setBadge(confident) {
 
 setBadge(false);
 createBars();
+window.addEventListener("load", () => {
+  fetchSongs();
+});
 
 function burstConfetti() {
   confetti.innerHTML = "";
@@ -263,6 +292,7 @@ async function sendIdentifyRequest() {
     if (!data.match) {
       songValue.textContent = "No match";
       timeValue.textContent = "Timestamp: --";
+      stopDisplayTimer();
       confidenceValue.textContent = "Confidence: --%";
       confidenceFill.style.width = "0%";
       setBadge(false);
