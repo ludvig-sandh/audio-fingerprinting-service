@@ -111,7 +111,7 @@ The frontend records audio, sends it to `/identify`, and displays the match resu
 
 ### Configure API URL
 
-Edit `client/web/config.js` to point to your backend API:
+Edit `client/web/config.js` to point to your backend API (or `http://localhost:8000` for local dev):
 
 ```js
 window.API_BASE = "https://YOUR_BACKEND_URL_HERE";

@@ -1,1 +1,1 @@
-window.API_BASE = "http://localhost:8000"; // <-- Your backend URL here
+window.API_BASE = "http://13.50.78.146:8080"; // <-- Your backend URL here
