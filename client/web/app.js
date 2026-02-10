@@ -298,7 +298,7 @@ async function sendIdentifyRequest() {
       setBadge(false);
       lastConfident = false;
     } else {
-      const song = data.match.song_id ?? "Unknown";
+    const song = data.match.song_name ?? "Unknown";
       const time = Math.round(data.match.timestamp_seconds);
       const conf = data.match.certainty ?? 0;
       songValue.textContent = song;

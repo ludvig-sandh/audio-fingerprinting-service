@@ -122,7 +122,7 @@ def identify_song_endpoint(
     adjusted_timestamp = timestamp + recording_length
     return {
         "match": {
-            "song_id": song_id,
+            "song_name": song_id,
             "timestamp_seconds": adjusted_timestamp,
             "certainty": certainty,
         }
