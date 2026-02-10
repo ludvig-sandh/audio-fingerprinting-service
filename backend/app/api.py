@@ -22,6 +22,7 @@ FINGERPRINTER = Fingerprinter()
 init_db(DB_PATH)
 
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
+MAX_SONGS = int(os.getenv("MAX_SONGS", "100"))
 
 app.add_middleware(
     CORSMiddleware,
@@ -58,6 +59,14 @@ def insert_song_endpoint(
         raise HTTPException(status_code=401, detail="Unauthorized.")
     tmp_path = _save_upload_to_temp(file)
     try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cur = conn.execute("SELECT COUNT(*) FROM songs")
+            current_count = cur.fetchone()[0]
+            if current_count >= MAX_SONGS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Song limit reached ({MAX_SONGS}).",
+                )
         sample_rate, mono = load_wav_mono(tmp_path)
         duration_seconds = mono.size / sample_rate if sample_rate > 0 else 0.0
         if duration_seconds < 60:
