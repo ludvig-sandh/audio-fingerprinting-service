@@ -7,7 +7,7 @@ from pathlib import Path
 import os
 import sqlite3
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile, Header
 from fastapi.middleware.cors import CORSMiddleware
 
 from fingerprinter import Fingerprinter, load_wav_mono
@@ -20,6 +20,8 @@ DB_PATH = Path(os.getenv("FP_DB_PATH", "fingerprints.db"))
 FINGERPRINTER = Fingerprinter()
 
 init_db(DB_PATH)
+
+ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
 
 app.add_middleware(
     CORSMiddleware,
@@ -41,12 +43,19 @@ def _save_upload_to_temp(upload: UploadFile) -> Path:
         upload.file.close()
     return Path(tmp.name)
 
-
 @app.post("/songs")
 def insert_song_endpoint(
     file: UploadFile = File(...),
     song_id: str | None = None,
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
 ) -> dict:
+    if not ADMIN_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="ADMIN_API_KEY is not configured.",
+        )
+    if x_api_key != ADMIN_API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized.")
     tmp_path = _save_upload_to_temp(file)
     try:
         sample_rate, mono = load_wav_mono(tmp_path)
@@ -132,7 +141,18 @@ def list_songs() -> dict:
 
 
 @app.delete("/songs/{song_id}")
-def delete_song(song_id: int) -> dict:
+def delete_song(
+    song_id: int,
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+) -> dict:
+    print(ADMIN_API_KEY)
+    if not ADMIN_API_KEY:
+        raise HTTPException(
+            status_code=500,
+            detail="ADMIN_API_KEY is not configured.",
+        )
+    if x_api_key != ADMIN_API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized.")
     if not DB_PATH.exists():
         raise HTTPException(status_code=404, detail="Database not found.")
 
