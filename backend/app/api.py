@@ -4,6 +4,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
+import os
 import sqlite3
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -15,7 +16,7 @@ from storage import init_db, insert_song
 
 app = FastAPI(title="Audio Fingerprinting API")
 
-DB_PATH = Path("fingerprints.db")
+DB_PATH = Path(os.getenv("FP_DB_PATH", "fingerprints.db"))
 FINGERPRINTER = Fingerprinter()
 
 init_db(DB_PATH)
