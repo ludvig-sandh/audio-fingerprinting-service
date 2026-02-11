@@ -30,6 +30,7 @@ async function fetchSongs() {
   if (!songsList || !songsEmpty) return;
   try {
     songsEmpty.textContent = "Loading...";
+    songsEmpty.classList.remove("error");
     const url = apiBase ? `${apiBase}/songs` : "/songs";
     const res = await fetch(url);
     const data = await res.json();
@@ -37,16 +38,19 @@ async function fetchSongs() {
     songsList.innerHTML = "";
     if (!songs.length) {
       songsEmpty.textContent = "No songs yet.";
+      songsEmpty.classList.remove("error");
       return;
     }
     songsEmpty.textContent = "";
+    songsEmpty.classList.remove("error");
     for (const song of songs) {
       const li = document.createElement("li");
       li.textContent = song.name || song.song_id || String(song);
       songsList.appendChild(li);
     }
   } catch (err) {
-    songsEmpty.textContent = "Failed to load songs.";
+    songsEmpty.textContent = "Backend does not seem to be live right now.";
+    songsEmpty.classList.add("error");
   }
 }
 
