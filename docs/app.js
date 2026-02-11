@@ -225,7 +225,7 @@ toggleBtn.addEventListener("click", async () => {
       audio: {
         echoCancellation: false,
         noiseSuppression: false,
-        autoGainControl: false,
+        autoGainControl: true,
         channelCount: 1,
       },
     });
