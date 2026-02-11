@@ -54,6 +54,7 @@ def find_best_match(
 
     best_song = None
     best_count = 0
+    second_best = 0
     best_time_bin = 0
 
     song_name_lookup: dict[str, str] = {}
@@ -70,19 +71,22 @@ def find_best_match(
         top_bin, top_count = max(bins.items(), key=lambda x: x[1])
         per_song_scores[song_id] = (top_bin, top_count)
         if top_count > best_count:
+            second_best = best_count
             best_count = top_count
             best_song = song_id
             best_time_bin = top_bin
+        elif top_count > second_best:
+            second_best = top_count
 
     if best_song is None:
         return (None, 0.0, 0.0)
     
     timestamp_seconds = best_time_bin * time_bin_size
-    total_count = sum(score for _, score in per_song_scores.values())
-    if total_count == 0:
+    denom = best_count + second_best
+    if denom == 0:
         certainty = 0
     else:
-        certainty = (best_count / total_count) ** 0.5 * 100.0
+        certainty = (best_count / denom) ** 0.5 * 100.0
 
         # In case of low matches, don't be overly confident
         if best_count < 5:
