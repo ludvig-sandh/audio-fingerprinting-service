@@ -35,6 +35,7 @@ def find_best_match(
     if not db_path.exists():
         return (None, 0.0, 0.0)
 
+    matched_sample_fingerprints = 0
     with sqlite3.connect(db_path) as conn:
         conn.row_factory = sqlite3.Row
         for h_sample, t_sample in tqdm(sample_hashes, desc="Matching fingerprints"):
@@ -42,15 +43,18 @@ def find_best_match(
                 "SELECT song_id, t_anchor FROM fingerprints WHERE hash = ?",
                 (h_sample,),
             )
+            found_for_this_fingerprint = False
             for row in cur:
+                found_for_this_fingerprint = True
                 delta = row["t_anchor"] - t_sample
                 time_bin = int(delta / time_bin_size)
                 song_bins[str(row["song_id"])][time_bin] += 1
+            if found_for_this_fingerprint:
+                matched_sample_fingerprints += 1
 
     best_song = None
     best_count = 0
     best_time_bin = 0
-    second_best = 0
 
     song_name_lookup: dict[str, str] = {}
     with sqlite3.connect(db_path) as conn:
@@ -59,28 +63,34 @@ def find_best_match(
         for row in cur:
             song_name_lookup[str(row["id"])] = row["name"]
 
+    per_song_scores: dict[str, tuple[int, int]] = {}
     for song_id, bins in song_bins.items():
         if not bins:
             continue
         top_bin, top_count = max(bins.items(), key=lambda x: x[1])
+        per_song_scores[song_id] = (top_bin, top_count)
         if top_count > best_count:
-            second_best = best_count
             best_count = top_count
             best_song = song_id
             best_time_bin = top_bin
-        elif top_count > second_best:
-            second_best = top_count
 
     if best_song is None:
         return (None, 0.0, 0.0)
     
     timestamp_seconds = best_time_bin * time_bin_size
-    if best_count + second_best == 0:
+    total_count = sum(score for _, score in per_song_scores.values())
+    if total_count == 0:
         certainty = 0
     else:
-        certainty = (best_count / (best_count + second_best)) * 100.0
-        if best_count < 100:
-            certainty *= best_count / 100.0
-        certainty = int(round(certainty))
+        certainty = int(round((best_count / total_count) * 100.0))
+    for song_id, (_, score) in sorted(
+        per_song_scores.items(), key=lambda item: item[1][1], reverse=True
+    ):
+        song_name = song_name_lookup.get(song_id, song_id)
+        print(f"[match] song={song_name} score={score}")
+    print(
+        f"[match] matched_sample_fingerprints={matched_sample_fingerprints}/{len(sample_hashes)}"
+    )
+
     song_name = song_name_lookup.get(best_song, best_song)
     return (song_name, timestamp_seconds, certainty)
