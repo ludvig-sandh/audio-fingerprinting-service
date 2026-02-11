@@ -301,7 +301,7 @@ async function sendIdentifyRequest() {
       throw new Error(data.detail || "Request failed");
     }
     if (!data.match) {
-      songValue.textContent = "No match";
+      songValue.textContent = "--";
       timeValue.textContent = "Timestamp: --";
       stopDisplayTimer();
       confidenceValue.textContent = "Confidence: --%";
