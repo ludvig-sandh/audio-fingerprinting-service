@@ -1,1 +1,1 @@
-window.API_BASE = "http://13.50.78.146:8080"; // <-- Your backend URL here
+window.API_BASE = "https://rewirable-overcivilly-serena.ngrok-free.dev"; // <-- Your backend URL here
