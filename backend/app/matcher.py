@@ -82,7 +82,7 @@ def find_best_match(
     if total_count == 0:
         certainty = 0
     else:
-        certainty = best_count / total_count ** 0.5 * 100.0
+        certainty = (best_count / total_count) ** 0.5 * 100.0
 
         # In case of low matches, don't be overly confident
         if total_count < 5:
