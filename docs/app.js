@@ -239,7 +239,7 @@ toggleBtn.addEventListener("click", async () => {
       const channelData = e.inputBuffer.getChannelData(0);
       chunks.push(new Float32Array(channelData));
       totalSamples += channelData.length;
-      const maxSamples = (audioContext ? audioContext.sampleRate : 44100) * 8;
+      const maxSamples = (audioContext ? audioContext.sampleRate : 44100) * 14;
       while (totalSamples > maxSamples && chunks.length) {
         const removed = chunks.shift();
         totalSamples -= removed.length;
