@@ -192,7 +192,7 @@ function startDisplayTimer(baseSeconds) {
   if (displayTimer) clearInterval(displayTimer);
   displayTimer = setInterval(() => {
     const elapsed = (Date.now() - displayStart) / 1000;
-    timeValue.textContent = `Timestamp: ${formatTime(displayBaseTime + elapsed)}`;
+    timeValue.textContent = `Song time: ${formatTime(displayBaseTime + elapsed)}`;
   }, 1000);
 }
 
@@ -210,7 +210,7 @@ toggleBtn.addEventListener("click", async () => {
   }
 
   songValue.textContent = "--";
-  timeValue.textContent = "Timestamp: --";
+  timeValue.textContent = "Song time: --";
   stopDisplayTimer();
   confidenceValue.textContent = "Confidence: --%";
   confidenceFill.style.width = "0%";
@@ -267,7 +267,7 @@ toggleBtn.addEventListener("click", async () => {
     toggleBtn.textContent = "Listen for music";
     toggleBtn.classList.remove("secondary");
     songValue.textContent = "Mic access failed";
-    timeValue.textContent = "Timestamp: --";
+    timeValue.textContent = "Song time: --";
     confidenceValue.textContent = "Confidence: --%";
     confidenceFill.style.width = "0%";
     setBadge(false);
@@ -302,7 +302,7 @@ async function sendIdentifyRequest() {
     }
     if (!data.match) {
       songValue.textContent = "--";
-      timeValue.textContent = "Timestamp: --";
+      timeValue.textContent = "Song time: --";
       stopDisplayTimer();
       confidenceValue.textContent = "Confidence: --%";
       confidenceFill.style.width = "0%";
@@ -313,7 +313,7 @@ async function sendIdentifyRequest() {
       const time = Math.round(data.match.timestamp_seconds);
       const conf = data.match.certainty ?? 0;
       songValue.textContent = song;
-      timeValue.textContent = `Timestamp: ${formatTime(time)}`;
+      timeValue.textContent = `Song time: ${formatTime(time)}`;
       startDisplayTimer(time);
       confidenceValue.textContent = `Confidence: ${conf}%`;
       confidenceFill.style.width = `${Math.max(0, Math.min(100, conf))}%`;
@@ -329,7 +329,7 @@ async function sendIdentifyRequest() {
     }
   } catch (err) {
     songValue.textContent = "Error";
-    timeValue.textContent = "Timestamp: --";
+    timeValue.textContent = "Song time: --";
     confidenceValue.textContent = "Confidence: --%";
     confidenceFill.style.width = "0%";
     setBadge(false);

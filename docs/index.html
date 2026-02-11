@@ -3,20 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Audio Fingerprinting Demo</title>
+    <title>Audio Identification Demo</title>
         <link rel="stylesheet" href="./styles.css" />
 
   </head>
   <body>
     <div class="container">
-      <h1>Audio Fingerprinting Demo</h1>
-      <p>Record a short clip and identify the song using the backend.</p>
+      <h1>Audio Identification Demo</h1>
+      <p>Press the button and the app listens until it matches an available song.</p>
 
       <div class="row">
         <button id="toggleBtn">Listen for music</button>
       </div>
 
-      <div class="match-label">Match Result</div>
+      <div class="match-label">Current Match</div>
       <div class="match-card" style="position: relative;">
         <div class="confetti" id="confetti"></div>
         <div class="match-top">
@@ -24,7 +24,7 @@
           <div class="badge" id="matchBadge"></div>
         </div>
         <div class="hero-meta">
-          <span id="timeValue">Timestamp: --</span>
+          <span id="timeValue">Song time: --</span>
         </div>
         <div class="confidence-wrap">
           <div class="confidence-label" id="confidenceValue">Confidence: --%</div>
