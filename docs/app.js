@@ -31,11 +31,7 @@ async function fetchSongs() {
   try {
     songsEmpty.textContent = "Loading...";
     const url = apiBase ? `${apiBase}/songs` : "/songs";
-    const res = await fetch(url, {
-      headers: {
-        "ngrok-skip-browser-warning": "true",
-      },
-    });
+    const res = await fetch(url);
     const data = await res.json();
     const songs = data.songs || [];
     songsList.innerHTML = "";
@@ -287,9 +283,6 @@ async function sendIdentifyRequest() {
   try {
     const res = await fetch(identifyUrl, {
       method: "POST",
-      headers: {
-        "ngrok-skip-browser-warning": "true",
-      },
       body: formData,
     });
     const data = await res.json();
