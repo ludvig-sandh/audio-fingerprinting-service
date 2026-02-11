@@ -85,8 +85,8 @@ def find_best_match(
         certainty = (best_count / total_count) ** 0.5 * 100.0
 
         # In case of low matches, don't be overly confident
-        if total_count < 5:
-            certainty *= total_count / 5
+        if best_count < 5:
+            certainty *= best_count / 5
 
         certainty = int(round(certainty))
     for song_id, (_, score) in sorted(
