@@ -317,7 +317,7 @@ async function sendIdentifyRequest() {
       startDisplayTimer(time);
       confidenceValue.textContent = `Confidence: ${conf}%`;
       confidenceFill.style.width = `${Math.max(0, Math.min(100, conf))}%`;
-      const confident = conf >= 90;
+      const confident = conf >= 75;
       setBadge(confident);
       if (confident && !lastConfident) {
         burstConfetti();

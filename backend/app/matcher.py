@@ -82,7 +82,8 @@ def find_best_match(
     if total_count == 0:
         certainty = 0
     else:
-        certainty = int(round((best_count / total_count) * 100.0))
+        fraction_of_count = best_count / total_count
+        certainty = int(round((fraction_of_count) ** 0.5 * 100.0))
     for song_id, (_, score) in sorted(
         per_song_scores.items(), key=lambda item: item[1][1], reverse=True
     ):
