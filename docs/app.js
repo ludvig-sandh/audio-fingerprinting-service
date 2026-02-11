@@ -221,7 +221,14 @@ toggleBtn.addEventListener("click", async () => {
   totalSamples = 0;
   try {
     toggleBtn.textContent = "Requesting mic...";
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: false,
+        noiseSuppression: false,
+        autoGainControl: false,
+        channelCount: 1,
+      },
+    });
     mediaStream = stream;
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     input = audioContext.createMediaStreamSource(mediaStream);
