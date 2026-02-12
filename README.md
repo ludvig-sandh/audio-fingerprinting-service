@@ -40,6 +40,7 @@ The backend:
 
 - Inserted songs must be **1-5 minutes** long
 - Identify samples must be **≤ 15 seconds**
+- Upload size is limited by `MAX_UPLOAD_BYTES` (default **50 MB**)
 - Maximum number of songs can be capped via `MAX_SONGS` (unset by default => no cap)
 
 ### Environment Variables
@@ -48,6 +49,7 @@ The backend:
 |---|---|---|
 | `FP_DB_PATH` | `fingerprints.db` | SQLite database file path |
 | `ADMIN_API_KEY` | *(required for inserts/deletes)* | API key for `/songs` insert and delete |
+| `MAX_UPLOAD_BYTES` | `52428800` | Max upload size in bytes for both `/songs` and `/identify` |
 | `MAX_SONGS` | *(unset = no limit)* | Max number of songs allowed in DB |
 
 ## Running the Backend (Local)

@@ -24,6 +24,7 @@ init_db(DB_PATH)
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
 _max_songs_raw = os.getenv("MAX_SONGS")
 MAX_SONGS = int(_max_songs_raw) if _max_songs_raw else None
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_BYTES", str(50 * 1024 * 1024)))
 
 app.add_middleware(
     CORSMiddleware,
@@ -45,6 +46,15 @@ def _save_upload_to_temp(upload: UploadFile) -> Path:
         upload.file.close()
     return Path(tmp.name)
 
+
+def _enforce_upload_size(file_path: Path) -> None:
+    file_size = file_path.stat().st_size
+    if file_size > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Max size is {MAX_UPLOAD_BYTES} bytes.",
+        )
+
 @app.post("/songs")
 def insert_song_endpoint(
     file: UploadFile = File(...),
@@ -60,6 +70,7 @@ def insert_song_endpoint(
         raise HTTPException(status_code=401, detail="Unauthorized.")
     tmp_path = _save_upload_to_temp(file)
     try:
+        _enforce_upload_size(tmp_path)
         if MAX_SONGS is not None:
             with sqlite3.connect(DB_PATH) as conn:
                 cur = conn.execute("SELECT COUNT(*) FROM songs")
@@ -101,6 +112,7 @@ def identify_song_endpoint(
 ) -> dict:
     tmp_path = _save_upload_to_temp(file)
     try:
+        _enforce_upload_size(tmp_path)
         sample_rate, mono = load_wav_mono(tmp_path)
         recording_length = mono.size / sample_rate if sample_rate > 0 else 0.0
         if recording_length > 15:
