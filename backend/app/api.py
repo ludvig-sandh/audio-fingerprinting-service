@@ -98,6 +98,8 @@ def insert_song_endpoint(
             fingerprinter=FINGERPRINTER,
             song_id=song_id or Path(file.filename or tmp_path.name).stem,
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     finally:
@@ -125,6 +127,8 @@ def identify_song_endpoint(
             db_path=DB_PATH,
             fingerprinter=FINGERPRINTER,
         )
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     finally:
