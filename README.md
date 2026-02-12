@@ -133,7 +133,7 @@ The frontend records audio, sends it to `/identify`, and displays the match resu
 
 ### Configure API URL
 
-Edit `client/web/config.js` to point to your backend API (or `http://localhost:8000` for local dev):
+Edit `docs/config.js` to point to your backend API (or `http://localhost:8000` for local dev):
 
 ```js
 window.API_BASE = "https://YOUR_BACKEND_URL_HERE";
@@ -144,7 +144,7 @@ This file is committed so the demo works out of the box. Change it to your own b
 ### Run Locally
 For example:
 ```bash
-cd client/web
+cd docs
 python -m http.server 5173
 ```
 
