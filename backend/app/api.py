@@ -121,7 +121,7 @@ def identify_song_endpoint(
     if song_id is None:
         return {"match": None}
 
-    adjusted_timestamp = timestamp + recording_length
+    adjusted_timestamp = int(round(timestamp + recording_length))
     return {
         "match": {
             "song_name": song_id,
