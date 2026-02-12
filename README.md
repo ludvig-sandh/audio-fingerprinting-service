@@ -49,7 +49,7 @@ The backend:
 |---|---|---|
 | `FP_DB_PATH` | `fingerprints.db` | SQLite database file path |
 | `ADMIN_API_KEY` | *(required for inserts/deletes)* | API key for `/songs` insert and delete |
-| `MAX_UPLOAD_BYTES` | `52428800` | Max upload size in bytes for both `/songs` and `/identify` |
+| `MAX_UPLOAD_BYTES` | `52428800` (50MB) | Max upload size in bytes for both `/songs` and `/identify` |
 | `MAX_SONGS` | *(unset = no limit)* | Max number of songs allowed in DB |
 
 ## Running the Backend (Local)
@@ -117,7 +117,7 @@ docker build -t audio-fp-backend backend
 
 Run:
 
-You should set `ADMIN_API_KEY`. You can also set `FP_DB_PATH` and mount a volume to persist the database. `MAX_SONGS` is optional if you want to enforce a cap.
+You should set `ADMIN_API_KEY`. You can also set `FP_DB_PATH` and mount a volume to persist the database. `MAX_UPLOAD_BYTES` and `MAX_SONGS` are optional if you want to enforce upload-size and song-count caps.
 
 ```bash
 docker run -p 8000:8000 -e ADMIN_API_KEY=supersecret -e FP_DB_PATH=/data/fingerprints.db -v /srv/audio-fp/data:/data audio-fp-backend
