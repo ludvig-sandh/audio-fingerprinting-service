@@ -156,7 +156,6 @@ def delete_song(
     song_id: int,
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
 ) -> dict:
-    print(ADMIN_API_KEY)
     if not ADMIN_API_KEY:
         raise HTTPException(
             status_code=500,
