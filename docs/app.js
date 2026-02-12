@@ -212,6 +212,17 @@ function renderSongTitle(songName, confident) {
     songValue.textContent = confident ? songName : `${songName}?`;
 }
 
+function resetMatchDisplay() {
+    latestMatchedSong = null;
+    songValue.textContent = "--";
+    timeValue.textContent = "Song time: --";
+    stopDisplayTimer();
+    confidenceValue.textContent = "Confidence: --%";
+    confidenceFill.style.width = "0%";
+    setBadge(false);
+    lastConfident = false;
+}
+
 toggleBtn.addEventListener("click", async () => {
     if (isRecording) {
         await stopRecording();
@@ -311,14 +322,7 @@ async function sendIdentifyRequest() {
             throw new Error(data.detail || "Request failed");
         }
         if (!data.match) {
-            latestMatchedSong = null;
-            songValue.textContent = "--";
-            timeValue.textContent = "Song time: --";
-            stopDisplayTimer();
-            confidenceValue.textContent = "Confidence: --%";
-            confidenceFill.style.width = "0%";
-            setBadge(false);
-            lastConfident = false;
+            resetMatchDisplay();
         } else {
             const song = data.match.song_name ?? "Unknown";
             const time = Math.round(data.match.timestamp_seconds);
@@ -340,13 +344,8 @@ async function sendIdentifyRequest() {
             }
         }
     } catch (err) {
-        latestMatchedSong = null;
-        songValue.textContent = "Error";
-        timeValue.textContent = "Song time: --";
-        confidenceValue.textContent = "Confidence: --%";
-        confidenceFill.style.width = "0%";
-        setBadge(false);
-        lastConfident = false;
+        console.error("Identify request failed:", err);
+        resetMatchDisplay();
     } finally {
         inFlight = false;
     }
