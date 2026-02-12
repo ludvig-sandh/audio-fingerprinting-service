@@ -91,7 +91,7 @@ Example response:
 ```json
 {"match":{"song_name":"Example artist - Example song","timestamp_seconds":64,"certainty":99}}
 ```
-Certainty is reported as a percentage confidence score. Higher values indicate a more reliable match.
+Certainty is a percentage based on how much stronger the best candidate is than the second-best candidate, with extra damping when evidence is very low.
 
 ### List Songs
 
@@ -115,10 +115,10 @@ docker build -t audio-fp-backend backend
 
 Run:
 
-You should set `ADMIN_API_KEY`. You can also set `FP_DB_PATH`, optionally set `MAX_SONGS`, and mount a volume to persist the database.
+You should set `ADMIN_API_KEY`. You can also set `FP_DB_PATH` and mount a volume to persist the database. `MAX_SONGS` is optional if you want to enforce a cap.
 
 ```bash
-docker run -p 8000:8000 -e ADMIN_API_KEY=supersecret -e FP_DB_PATH=/data/fingerprints.db -e MAX_SONGS=100 -v /srv/audio-fp/data:/data audio-fp-backend
+docker run -p 8000:8000 -e ADMIN_API_KEY=supersecret -e FP_DB_PATH=/data/fingerprints.db -v /srv/audio-fp/data:/data audio-fp-backend
 ```
 
 On Windows, use a Windows path for the volume:
