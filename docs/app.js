@@ -161,7 +161,7 @@ function burstConfetti() {
     }, 1200);
 }
 
-async function stopRecording() {
+async function stopRecording(resetDisplay = false) {
     if (!isRecording) return;
     isRecording = false;
     toggleBtn.textContent = "Listen for music";
@@ -178,6 +178,9 @@ async function stopRecording() {
     if (pollingTimer) {
         clearInterval(pollingTimer);
         pollingTimer = null;
+    }
+    if (resetDisplay) {
+        resetMatchDisplay();
     }
 }
 function formatTime(seconds) {
@@ -236,7 +239,7 @@ function setListeningDisplay() {
 
 toggleBtn.addEventListener("click", async () => {
     if (isRecording) {
-        await stopRecording();
+        await stopRecording(true);
         return;
     }
 
