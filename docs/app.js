@@ -1,5 +1,6 @@
 const apiBase = (window.API_BASE || "").replace(/\/+$/, "");
 const identifyUrl = apiBase ? `${apiBase}/identify` : "/identify";
+const CONFIDENCE_THRESHOLD = 80;
 
 const toggleBtn = document.getElementById("toggleBtn");
 const songValue = document.getElementById("songValue");
@@ -338,7 +339,7 @@ async function sendIdentifyRequest() {
             const song = data.match.song_name ?? "Unknown";
             const time = Math.round(data.match.timestamp_seconds);
             const conf = data.match.certainty ?? 0;
-            const confident = conf >= 75;
+            const confident = conf >= CONFIDENCE_THRESHOLD;
             if (!confident) {
                 setListeningDisplay();
             } else {
