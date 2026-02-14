@@ -1,6 +1,6 @@
 # Audio Fingerprinting Service
 
-This project implements an audio fingerprinting and matching service inspired by techniques used in systems like Shazam. I based the matching algorithm on the paper by Wang, Avery Li-Chun, "An Industrial-Strength Audio Search Algorithm" (ISMIR 2003). The project includes a FastAPI backend for inserting and identifying songs, and a lightweight frontend example for recording audio and testing matches.
+This project implements an audio fingerprinting and matching service inspired by techniques used in systems like Shazam. I based the matching algorithm on the paper by Wang, Avery Li-Chun, "An Industrial-Strength Audio Search Algorithm" (ISMIR 2003). The project includes a FastAPI backend for inserting and identifying songs, and a lightweight frontend example for using the API (recording audio and testing matches).
 
 Deploy by cloning the repository, building the Docker image, and running the container.
 
@@ -21,7 +21,7 @@ To scale into the millions of songs, the main design shift is to employ sharding
 - capacity grows horizontally by adding nodes
 - a lightweight aggregation layer combines shard-level vote results into a final match
 
-For this demo, SQLite keeps the setup simple, but it is not ideal for large-scale distributed workloads. At higher scale, the storage layer should move to a system designed for concurrent writes, partitioning, and horizontal growth (for example PostgreSQL with partitioning, or a distributed key-value/index store for fingerprint hashes). This would enable sharding the fingerprint index cleanly and sustaining much higher query throughput.
+For this demo, I use SQLite for simplicity, but it is not ideal for large-scale distributed workloads. At higher scale, the storage layer should move to a system designed for concurrent writes, partitioning, and horizontal growth (for example PostgreSQL with partitioning, or a distributed key-value/index store for fingerprint hashes). This would allow sharding the fingerprint index and sustaining a much higher query throughput.
 
 ## Repository Layout
 
@@ -170,9 +170,3 @@ http://127.0.0.1:5173/
 - `GET /songs` - list available songs
 - `DELETE /songs/{id}` (protected) - delete a song
 - `POST /identify` - identify a sample
-
-## Notes
-
-- The database is SQLite.
-- Fingerprints are generated from spectrogram peaks and stored with timestamps.
-- Matching uses fingerprint hash collisions and time-offset voting.
