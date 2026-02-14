@@ -209,12 +209,23 @@ function renderSongTitle(songName, confident) {
         songValue.textContent = "--";
         return;
     }
-    songValue.textContent = confident ? songName : `${songName}?`;
+    songValue.textContent = songName;
 }
 
 function resetMatchDisplay() {
     latestMatchedSong = null;
     songValue.textContent = "--";
+    timeValue.textContent = "Song time: --";
+    stopDisplayTimer();
+    confidenceValue.textContent = "Confidence: --%";
+    confidenceFill.style.width = "0%";
+    setBadge(false);
+    lastConfident = false;
+}
+
+function setListeningDisplay() {
+    latestMatchedSong = null;
+    songValue.textContent = "Listening...";
     timeValue.textContent = "Song time: --";
     stopDisplayTimer();
     confidenceValue.textContent = "Confidence: --%";
@@ -229,14 +240,7 @@ toggleBtn.addEventListener("click", async () => {
         return;
     }
 
-    songValue.textContent = "--";
-    latestMatchedSong = null;
-    timeValue.textContent = "Song time: --";
-    stopDisplayTimer();
-    confidenceValue.textContent = "Confidence: --%";
-    confidenceFill.style.width = "0%";
-    setBadge(false);
-    lastConfident = false;
+    setListeningDisplay();
     clearBars();
     chunks = [];
     totalSamples = 0;
@@ -322,25 +326,31 @@ async function sendIdentifyRequest() {
             throw new Error(data.detail || "Request failed");
         }
         if (!data.match) {
-            resetMatchDisplay();
+            if (isRecording) {
+                setListeningDisplay();
+            } else {
+                resetMatchDisplay();
+            }
         } else {
             const song = data.match.song_name ?? "Unknown";
             const time = Math.round(data.match.timestamp_seconds);
             const conf = data.match.certainty ?? 0;
-            latestMatchedSong = song;
-            timeValue.textContent = `Song time: ${formatTime(time)}`;
-            startDisplayTimer(time);
-            confidenceValue.textContent = `Confidence: ${conf}%`;
-            confidenceFill.style.width = `${Math.max(0, Math.min(100, conf))}%`;
             const confident = conf >= 75;
-            renderSongTitle(latestMatchedSong, confident);
-            setBadge(confident);
-            if (confident && !lastConfident) {
-                burstConfetti();
-                lastConfident = true;
-                await stopRecording();
-            } else if (!confident) {
-                lastConfident = false;
+            if (!confident) {
+                setListeningDisplay();
+            } else {
+                latestMatchedSong = song;
+                timeValue.textContent = `Song time: ${formatTime(time)}`;
+                startDisplayTimer(time);
+                confidenceValue.textContent = `Confidence: ${conf}%`;
+                confidenceFill.style.width = `${Math.max(0, Math.min(100, conf))}%`;
+                renderSongTitle(latestMatchedSong, confident);
+                setBadge(confident);
+                if (!lastConfident) {
+                    burstConfetti();
+                    lastConfident = true;
+                    await stopRecording();
+                }
             }
         }
     } catch (err) {
