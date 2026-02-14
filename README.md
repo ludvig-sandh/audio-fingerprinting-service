@@ -75,6 +75,14 @@ cd backend/app
 set ADMIN_API_KEY=supersecret && python -m uvicorn api:app --reload --host 0.0.0.0 --port 8000
 ```
 
+### Run Backend Tests
+
+```bash
+cd backend
+python -m pip install -r requirements-dev.txt
+python -m pytest
+```
+
 ### Insert a Song
 
 Some curl examples shown below. Once the server is running, you can insert songs with:
