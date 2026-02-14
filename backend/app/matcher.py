@@ -6,6 +6,7 @@ import sqlite3
 
 from fingerprinter import Fingerprinter, fingerprint_hash
 
+LOW_CONFIDENCE_THRESHOLD = 7
 
 def select_match_from_song_bins(
     song_bins: dict[str, dict[int, int]],
@@ -37,8 +38,11 @@ def select_match_from_song_bins(
         certainty = 0
     else:
         certainty = (best_count / denom) ** 0.5 * 100.0
-        if best_count < 5:
-            certainty *= best_count / 5
+
+        # Low confidence damping
+        if best_count < LOW_CONFIDENCE_THRESHOLD:
+            certainty *= best_count / LOW_CONFIDENCE_THRESHOLD
+
         certainty = int(round(certainty))
 
     return (best_song, timestamp_seconds, certainty)
