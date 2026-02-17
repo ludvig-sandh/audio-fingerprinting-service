@@ -1,4 +1,5 @@
 # Audio Fingerprinting Service
+[![Tests](https://github.com/ludvig-sandh/audio-fingerprinting-service/actions/workflows/tests.yml/badge.svg)](https://github.com/ludvig-sandh/audio-fingerprinting-service/actions/workflows/tests.yml)
 
 This project implements an audio fingerprinting and matching service inspired by techniques used in systems like Shazam. I based the matching algorithm on the paper by Wang, Avery Li-Chun, "An Industrial-Strength Audio Search Algorithm" (ISMIR 2003). The project includes a FastAPI backend for inserting and identifying songs, and a lightweight frontend example for using the API (recording audio and testing matches).
 
