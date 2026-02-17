@@ -69,6 +69,50 @@ def test_insert_song_rejects_short_audio(tmp_path, monkeypatch):
     assert "too short" in res.json()["detail"].lower()
 
 
+def test_insert_song_rejects_long_audio(tmp_path, monkeypatch):
+    api = load_api_module(tmp_path)
+    client = TestClient(api.app)
+
+    monkeypatch.setattr(
+        api,
+        "load_wav_mono_bytes",
+        lambda _bytes: (11025, np.zeros(301 * 11025, dtype=np.float32)),
+    )
+    monkeypatch.setattr(api, "insert_song", lambda **_kwargs: 1)
+
+    res = client.post(
+        "/songs",
+        headers={"X-API-Key": "test-secret"},
+        files={"file": ("song.wav", b"fake-wav", "audio/wav")},
+    )
+
+    assert res.status_code == 400
+    assert "too long" in res.json()["detail"].lower()
+
+
+def test_insert_song_accepts_valid_length_audio(tmp_path, monkeypatch):
+    api = load_api_module(tmp_path)
+    client = TestClient(api.app)
+
+    monkeypatch.setattr(
+        api,
+        "load_wav_mono_bytes",
+        lambda _bytes: (11025, np.zeros(300 * 11025, dtype=np.float32)),
+    )
+    monkeypatch.setattr(api, "insert_song", lambda **_kwargs: 1)
+
+    res = client.post(
+        "/songs",
+        headers={"X-API-Key": "test-secret"},
+        files={"file": ("song.wav", b"fake-wav", "audio/wav")},
+    )
+
+    assert res.status_code == 200
+    payload = res.json()
+    assert payload["song_id"] == 1
+    assert payload["song_name"] == "song"
+
+
 def test_identify_timestamp_is_integer(tmp_path, monkeypatch):
     api = load_api_module(tmp_path)
     client = TestClient(api.app)
@@ -193,3 +237,36 @@ def test_delete_song_not_found(tmp_path):
     )
     assert res.status_code == 404
     assert "song not found" in res.json()["detail"].lower()
+
+
+def test_insert_song_fails_for_duplicate_song_name(tmp_path, monkeypatch):
+    api = load_api_module(tmp_path)
+    client = TestClient(api.app)
+
+    monkeypatch.setattr(
+        api,
+        "_load_upload_audio",
+        lambda _file: api.AudioClip(sample_rate=11025, mono=np.zeros(120 * 11025, dtype=np.float32)),
+    )
+    monkeypatch.setattr(
+        api.FINGERPRINTER,
+        "fingerprints_from_audio",
+        lambda _audio: ([], 0.0),
+    )
+
+    first = client.post(
+        "/songs",
+        headers={"X-API-Key": "test-secret"},
+        params={"song_name": "existing-song"},
+        files={"file": ("song.wav", b"fake-wav", "audio/wav")},
+    )
+    assert first.status_code == 200
+
+    duplicate = client.post(
+        "/songs",
+        headers={"X-API-Key": "test-secret"},
+        params={"song_name": "existing-song"},
+        files={"file": ("song.wav", b"fake-wav", "audio/wav")},
+    )
+    assert duplicate.status_code == 409
+    assert "already exists" in duplicate.json()["detail"].lower()
