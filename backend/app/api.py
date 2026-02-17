@@ -1,18 +1,25 @@
 from __future__ import annotations
 
-import shutil
-import tempfile
+import logging
 from pathlib import Path
 
 import os
-import sqlite3
 
 from fastapi import FastAPI, File, HTTPException, UploadFile, Header
 from fastapi.middleware.cors import CORSMiddleware
 
-from fingerprinter import Fingerprinter, load_wav_mono
+from fingerprinter import AudioClip, Fingerprinter, load_wav_mono_bytes
 from matcher import find_best_match
-from storage import init_db, insert_song
+from storage import (
+    SongAlreadyExistsError,
+    count_songs_in_db,
+    delete_song_by_id,
+    init_db,
+    insert_song,
+    list_songs_from_db,
+)
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Audio Fingerprinting API")
 
@@ -36,29 +43,64 @@ app.add_middleware(
 
 
 
-def _save_upload_to_temp(upload: UploadFile) -> Path:
-    suffix = Path(upload.filename or "").suffix or ".wav"
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+def _read_upload_bytes(upload: UploadFile) -> bytes:
+    chunks: list[bytes] = []
+    total = 0
     try:
-        with tmp as f:
-            shutil.copyfileobj(upload.file, f)
+        while True:
+            chunk = upload.file.read(1024 * 1024)
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_UPLOAD_BYTES:
+                raise HTTPException(
+                    status_code=413,
+                    detail=f"File too large. Max size is {MAX_UPLOAD_BYTES} bytes.",
+                )
+            chunks.append(chunk)
     finally:
         upload.file.close()
-    return Path(tmp.name)
+    return b"".join(chunks)
 
 
-def _enforce_upload_size(file_path: Path) -> None:
-    file_size = file_path.stat().st_size
-    if file_size > MAX_UPLOAD_BYTES:
+def _load_upload_audio(upload: UploadFile) -> AudioClip:
+    wav_bytes = _read_upload_bytes(upload)
+    sample_rate, mono = load_wav_mono_bytes(wav_bytes)
+    return AudioClip(sample_rate=sample_rate, mono=mono)
+
+
+def _audio_duration_seconds(audio: AudioClip) -> float:
+    return audio.duration_seconds()
+
+
+def _validate_song_duration(audio: AudioClip) -> None:
+    duration_seconds = _audio_duration_seconds(audio)
+    if duration_seconds < 60:
         raise HTTPException(
-            status_code=413,
-            detail=f"File too large. Max size is {MAX_UPLOAD_BYTES} bytes.",
+            status_code=400,
+            detail="Song is too short. Minimum length is 1 minute.",
         )
+    if duration_seconds > 300:
+        raise HTTPException(
+            status_code=400,
+            detail="Song is too long. Max length is 5 minutes.",
+        )
+
+
+def _validate_sample_duration(audio: AudioClip) -> float:
+    recording_length = _audio_duration_seconds(audio)
+    if recording_length > 15:
+        raise HTTPException(
+            status_code=400,
+            detail="Sample is too long. Max length is 15 seconds.",
+        )
+    return recording_length
+
 
 @app.post("/songs")
 def insert_song_endpoint(
     file: UploadFile = File(...),
-    song_id: str | None = None,
+    song_name: str | None = None,
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
 ) -> dict:
     if not ADMIN_API_KEY:
@@ -68,71 +110,83 @@ def insert_song_endpoint(
         )
     if x_api_key != ADMIN_API_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized.")
-    tmp_path = _save_upload_to_temp(file)
+
     try:
-        _enforce_upload_size(tmp_path)
+        audio = _load_upload_audio(file)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Failed to read upload for /songs")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or unreadable uploaded audio file.",
+        ) from exc
+
+    try:
         if MAX_SONGS is not None:
-            with sqlite3.connect(DB_PATH) as conn:
-                cur = conn.execute("SELECT COUNT(*) FROM songs")
-                current_count = cur.fetchone()[0]
-                if current_count >= MAX_SONGS:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Song limit reached ({MAX_SONGS}).",
-                    )
-        sample_rate, mono = load_wav_mono(tmp_path)
-        duration_seconds = mono.size / sample_rate if sample_rate > 0 else 0.0
-        if duration_seconds < 60:
-            raise HTTPException(
-                status_code=400,
-                detail="Song is too short. Minimum length is 1 minute.",
-            )
-        if duration_seconds > 300:
-            raise HTTPException(
-                status_code=400,
-                detail="Song is too long. Max length is 5 minutes.",
-            )
-        count = insert_song(
-            wav_path=tmp_path,
+            current_count = count_songs_in_db(db_path=DB_PATH)
+            if current_count >= MAX_SONGS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Song limit reached ({MAX_SONGS}).",
+                )
+
+        _validate_song_duration(audio)
+
+        name = song_name or Path(file.filename or "uploaded").stem
+        song_id = insert_song(
+            audio=audio,
             db_path=DB_PATH,
             fingerprinter=FINGERPRINTER,
-            song_id=song_id or Path(file.filename or tmp_path.name).stem,
+            name=name,
+        )
+    except SongAlreadyExistsError:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Song '{name}' already exists.",
         )
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    finally:
-        tmp_path.unlink(missing_ok=True)
+        logger.exception("Failed to process song insert for /songs")
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to process uploaded audio.",
+        ) from exc
 
-    return {"song_id": song_id or Path(file.filename or "").stem, "fingerprints": count}
+    return {"song_id": song_id, "song_name": name}
 
 
 @app.post("/identify")
 def identify_song_endpoint(
     file: UploadFile = File(...),
 ) -> dict:
-    tmp_path = _save_upload_to_temp(file)
     try:
-        _enforce_upload_size(tmp_path)
-        sample_rate, mono = load_wav_mono(tmp_path)
-        recording_length = mono.size / sample_rate if sample_rate > 0 else 0.0
-        if recording_length > 15:
-            raise HTTPException(
-                status_code=400,
-                detail="Sample is too long. Max length is 15 seconds.",
-            )
+        audio = _load_upload_audio(file)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Failed to read upload for /identify")
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid or unreadable uploaded audio file.",
+        ) from exc
+
+    try:
+        recording_length = _validate_sample_duration(audio)
         song_id, timestamp, certainty = find_best_match(
-            wav_path=tmp_path,
+            audio=audio,
             db_path=DB_PATH,
             fingerprinter=FINGERPRINTER,
         )
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    finally:
-        tmp_path.unlink(missing_ok=True)
+        logger.exception("Failed to process song identification for /identify")
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to process uploaded audio sample.",
+        ) from exc
 
     if song_id is None:
         return {"match": None}
@@ -152,18 +206,7 @@ def list_songs() -> dict:
     if not DB_PATH.exists():
         return {"songs": []}
 
-    songs: list[dict] = []
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.row_factory = sqlite3.Row
-        cur = conn.execute("SELECT id, name, length_seconds FROM songs ORDER BY name")
-        for row in cur:
-            songs.append(
-                {
-                    "id": row["id"],
-                    "name": row["name"],
-                    "length_seconds": row["length_seconds"],
-                }
-            )
+    songs = list_songs_from_db(db_path=DB_PATH)
     return {"songs": songs}
 
 
@@ -182,13 +225,8 @@ def delete_song(
     if not DB_PATH.exists():
         raise HTTPException(status_code=404, detail="Database not found.")
 
-    with sqlite3.connect(DB_PATH) as conn:
-        cur = conn.execute("SELECT id FROM songs WHERE id = ?", (song_id,))
-        row = cur.fetchone()
-        if row is None:
-            raise HTTPException(status_code=404, detail="Song not found.")
-
-        conn.execute("DELETE FROM fingerprints WHERE song_id = ?", (song_id,))
-        conn.execute("DELETE FROM songs WHERE id = ?", (song_id,))
+    deleted = delete_song_by_id(song_id=song_id, db_path=DB_PATH)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Song not found.")
 
     return {"deleted_song_id": song_id}

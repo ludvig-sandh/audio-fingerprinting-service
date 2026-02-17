@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from io import BytesIO
 from dataclasses import dataclass
-from pathlib import Path
 
 import numpy as np
 from scipy.io import wavfile
@@ -9,28 +9,35 @@ from scipy.signal import resample_poly, spectrogram
 from scipy.ndimage import maximum_filter
 
 
-def load_wav_mono(path: Path) -> tuple[int, np.ndarray]:
-    sample_rate, data = wavfile.read(path)
+def _to_mono_float(data: np.ndarray) -> np.ndarray:
     if data.ndim == 1:
         mono = data.astype(np.float32)
     else:
-        # Average channels to mono
         mono = data.astype(np.float32).mean(axis=1)
+
     # Normalize to [-1, 1] if integer PCM
     if np.issubdtype(data.dtype, np.integer):
         max_val = np.iinfo(data.dtype).max
         if max_val > 0:
             mono = mono / max_val
+    return mono
+
+
+def load_wav_mono_bytes(wav_bytes: bytes) -> tuple[int, np.ndarray]:
+    with BytesIO(wav_bytes) as buffer:
+        sample_rate, data = wavfile.read(buffer)
+    mono = _to_mono_float(data)
     return sample_rate, mono
 
 
 def trim_silence(
-    signal: np.ndarray,
-    sample_rate: int,
+    audio: AudioClip,
     threshold_db: float = -40.0,
     frame_ms: float = 20.0,
     min_silence_ms: float = 200.0,
 ) -> tuple[np.ndarray, int]:
+    signal = audio.mono
+    sample_rate = audio.sample_rate
     frame_len = max(1, int(sample_rate * frame_ms / 1000.0))
     hop_len = frame_len
     if signal.size < frame_len:
@@ -45,10 +52,12 @@ def trim_silence(
         return signal, 0
 
     min_frames = max(1, int(min_silence_ms / frame_ms))
+    
     # Smooth mask by requiring runs of non-silence
     idx = np.where(mask)[0]
     start = idx[0]
     end = idx[-1]
+
     # Expand start/end to include contiguous runs longer than min_frames
     # Find first run of True with length >= min_frames
     run_start = None
@@ -66,6 +75,7 @@ def trim_silence(
         else:
             run_start = None
             run_len = 0
+
     # Find last run of True with length >= min_frames
     run_start = None
     run_len = 0
@@ -156,6 +166,15 @@ class Fingerprint:
 
 
 @dataclass(frozen=True)
+class AudioClip:
+    sample_rate: int
+    mono: np.ndarray
+
+    def duration_seconds(self) -> float:
+        return self.mono.size / self.sample_rate if self.sample_rate > 0 else 0.0
+
+
+@dataclass(frozen=True)
 class FingerprinterConfig:
     target_rate: int = 11_025
     nperseg: int = 2048
@@ -165,16 +184,31 @@ class FingerprinterConfig:
     max_time_delta: int = 50
     max_freq_delta: int = 30
 
+    def __post_init__(self) -> None:
+        if self.nperseg <= 0:
+            raise ValueError("Invalid config: nperseg must be > 0.")
+        if self.noverlap < 0:
+            raise ValueError("Invalid config: noverlap must be >= 0.")
+        if self.noverlap >= self.nperseg:
+            raise ValueError("Invalid config: noverlap must be < nperseg.")
+        if self.target_rate <= 0:
+            raise ValueError("Invalid config: target_rate must be > 0.")
+
 
 class Fingerprinter:
     def __init__(self, config: FingerprinterConfig | None = None) -> None:
         self.config = config or FingerprinterConfig()
 
-    def fingerprints_from_wav(self, wav_path: Path) -> tuple[list[Fingerprint], float]:
-        sample_rate, mono = load_wav_mono(wav_path)
-        mono, trim_start = trim_silence(mono, sample_rate)
+    def fingerprints_from_audio(
+        self,
+        audio: AudioClip,
+    ) -> tuple[list[Fingerprint], float]:
+        sample_rate = audio.sample_rate
+        mono = audio.mono
+        mono, trim_start = trim_silence(audio)
         trim_offset_seconds = trim_start / sample_rate
 
+        # TODO: Only allow common sample rates so this doesn't blow up CPU
         if sample_rate != self.config.target_rate:
             from math import gcd
 

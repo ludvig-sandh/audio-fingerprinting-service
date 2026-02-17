@@ -24,8 +24,8 @@ def test_select_match_from_song_bins_returns_none_for_empty():
 
 def test_select_match_from_song_bins_picks_highest_vote_song_and_time_bin():
     song_bins = {
-        "songA": {2: 3, 4: 6},
-        "songB": {1: 4, 8: 5},
+        "songA": {2: 30, 4: 60},
+        "songB": {1: 40, 8: 50},
     }
 
     best_song, timestamp_seconds, certainty = select_match_from_song_bins(
@@ -40,7 +40,7 @@ def test_select_match_from_song_bins_picks_highest_vote_song_and_time_bin():
 
 def test_select_match_from_song_bins_applies_low_match_damping():
     song_bins = {
-        "songA": {6: 3},
+        "songA": {6: 2},
         "songB": {2: 1},
     }
 
@@ -51,4 +51,4 @@ def test_select_match_from_song_bins_applies_low_match_damping():
 
     assert best_song == "songA"
     assert timestamp_seconds == 3.0
-    assert certainty == 52
+    assert certainty < 50

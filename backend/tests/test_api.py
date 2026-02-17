@@ -54,8 +54,8 @@ def test_insert_song_rejects_short_audio(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         api,
-        "load_wav_mono",
-        lambda _path: (11025, np.zeros(59 * 11025, dtype=np.float32)),
+        "load_wav_mono_bytes",
+        lambda _bytes: (11025, np.zeros(59 * 11025, dtype=np.float32)),
     )
     monkeypatch.setattr(api, "insert_song", lambda **_kwargs: 1)
 
@@ -75,8 +75,8 @@ def test_identify_timestamp_is_integer(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         api,
-        "load_wav_mono",
-        lambda _path: (11025, np.zeros(2 * 11025, dtype=np.float32)),
+        "load_wav_mono_bytes",
+        lambda _bytes: (11025, np.zeros(2 * 11025, dtype=np.float32)),
     )
     monkeypatch.setattr(
         api,
@@ -109,12 +109,18 @@ def test_identify_respects_upload_size_limit(tmp_path):
     assert "file too large" in res.json()["detail"].lower()
 
 
-def test_insert_song_respects_max_songs_limit(tmp_path):
+def test_insert_song_respects_max_songs_limit(tmp_path, monkeypatch):
     import sqlite3
 
     api = load_api_module(tmp_path)
     api.MAX_SONGS = 1
     client = TestClient(api.app)
+
+    monkeypatch.setattr(
+        api,
+        "_load_upload_audio",
+        lambda _file: api.AudioClip(sample_rate=11025, mono=np.zeros(11025, dtype=np.float32)),
+    )
 
     with sqlite3.connect(api.DB_PATH) as conn:
         conn.execute(
@@ -137,8 +143,8 @@ def test_identify_rejects_sample_longer_than_15_seconds(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         api,
-        "load_wav_mono",
-        lambda _path: (11025, np.zeros(16 * 11025, dtype=np.float32)),
+        "load_wav_mono_bytes",
+        lambda _bytes: (11025, np.zeros(16 * 11025, dtype=np.float32)),
     )
     monkeypatch.setattr(
         api,
@@ -161,8 +167,8 @@ def test_delete_song_requires_api_key(tmp_path, monkeypatch):
 
     monkeypatch.setattr(
         api,
-        "load_wav_mono",
-        lambda _path: (11025, np.zeros(120 * 11025, dtype=np.float32)),
+        "load_wav_mono_bytes",
+        lambda _bytes: (11025, np.zeros(120 * 11025, dtype=np.float32)),
     )
     monkeypatch.setattr(api, "insert_song", lambda **_kwargs: 1)
 
