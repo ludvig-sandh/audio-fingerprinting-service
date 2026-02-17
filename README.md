@@ -1,13 +1,13 @@
 # Audio Fingerprinting Service
 [![Tests](https://github.com/ludvig-sandh/audio-fingerprinting-service/actions/workflows/tests.yml/badge.svg)](https://github.com/ludvig-sandh/audio-fingerprinting-service/actions/workflows/tests.yml)
 
-This project implements an audio fingerprinting and matching service inspired by techniques used in systems like Shazam. I based the matching algorithm on the paper by Wang, Avery Li-Chun, "An Industrial-Strength Audio Search Algorithm" (ISMIR 2003). The project includes a FastAPI backend for inserting and identifying songs, and a lightweight frontend example for using the API (recording audio and testing matches).
+This project implements an audio fingerprinting and matching service inspired by techniques used in systems like Shazam. I based the matching algorithm Avery Wang's paper, "An Industrial-Strength Audio Search Algorithm" (ISMIR 2003). The project includes a FastAPI backend for inserting and identifying songs, and a lightweight frontend example for using the API (recording audio and testing matches).
 
 Deploy by cloning the repository, building the Docker image, and running the container.
 
 ## Demo
 
-Live demo: `https://ludvig-sandh.github.io/audio-fingerprinting-service/`
+Live demo that even works on your phone: `https://ludvig-sandh.github.io/audio-fingerprinting-service/`
 
 I deployed the system on a cheap server and inserted a small set of songs so anyone can test the system through the link above. As a Swede, I thought ABBA songs were fitting.
 
@@ -27,7 +27,7 @@ For this demo, I use SQLite for simplicity, but it is not ideal for large-scale 
 ## Repository Layout
 
 - `backend/` - FastAPI service, fingerprinting logic, and SQLite storage.
-- `docs/` - Static frontend (HTML/CSS/JS) for recording and identification, served by GitHub Pages.
+- `docs/` - Static frontend (HTML/CSS/JS) for recording and identification.
 
 ## Backend Overview
 
@@ -74,7 +74,7 @@ python -m uvicorn api:app --reload --host 0.0.0.0 --port 8000
 **Windows CMD**
 ```cmd
 cd backend/app
-set ADMIN_API_KEY=supersecret && python -m uvicorn api:app --reload --host 0.0.0.0 --port 8000
+set "ADMIN_API_KEY=supersecret" && python -m uvicorn api:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ### Run Backend Tests
@@ -103,6 +103,10 @@ Example response:
 ```json
 {"match":{"song_name":"Example artist - Example song","timestamp_seconds":64,"certainty":99}}
 ```
+No-match response:
+```json
+{"match":null}
+```
 Certainty is a percentage based on how much stronger the best candidate is than the second-best candidate, with extra damping when evidence is very low.
 
 ### List Songs
@@ -116,6 +120,8 @@ curl "http://127.0.0.1:8000/songs"
 ```bash
 curl -X DELETE -H "X-API-Key: supersecret" "http://127.0.0.1:8000/songs/123"
 ```
+
+Obviously, if you deploy the backend, you'd replace 127.0.0.1 with the new base url in these commands.
 
 ## Running the Backend with Docker
 
