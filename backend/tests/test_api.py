@@ -113,6 +113,47 @@ def test_insert_song_accepts_valid_length_audio(tmp_path, monkeypatch):
     assert payload["song_name"] == "song"
 
 
+def test_insert_song_rejects_unsupported_sample_rate(tmp_path, monkeypatch):
+    api = load_api_module(tmp_path)
+    client = TestClient(api.app)
+
+    monkeypatch.setattr(
+        api,
+        "load_wav_mono_bytes",
+        lambda _bytes: (12345, np.zeros(120 * 12345, dtype=np.float32)),
+    )
+
+    res = client.post(
+        "/songs",
+        headers={"X-API-Key": "test-secret"},
+        files={"file": ("song.wav", b"fake-wav", "audio/wav")},
+    )
+
+    assert res.status_code == 400
+    assert "unsupported sample rate" in res.json()["detail"].lower()
+
+
+def test_insert_song_accepts_supported_sample_rate(tmp_path, monkeypatch):
+    api = load_api_module(tmp_path)
+    client = TestClient(api.app)
+
+    monkeypatch.setattr(
+        api,
+        "load_wav_mono_bytes",
+        lambda _bytes: (44100, np.zeros(120 * 44100, dtype=np.float32)),
+    )
+    monkeypatch.setattr(api, "insert_song", lambda **_kwargs: 1)
+
+    res = client.post(
+        "/songs",
+        headers={"X-API-Key": "test-secret"},
+        files={"file": ("song.wav", b"fake-wav", "audio/wav")},
+    )
+
+    assert res.status_code == 200
+    assert res.json()["song_id"] == 1
+
+
 def test_identify_timestamp_is_integer(tmp_path, monkeypatch):
     api = load_api_module(tmp_path)
     client = TestClient(api.app)
@@ -138,6 +179,25 @@ def test_identify_timestamp_is_integer(tmp_path, monkeypatch):
     assert payload["match"]["song_name"] == "abba"
     assert isinstance(payload["match"]["timestamp_seconds"], int)
     assert payload["match"]["timestamp_seconds"] == 12
+
+
+def test_identify_rejects_unsupported_sample_rate(tmp_path, monkeypatch):
+    api = load_api_module(tmp_path)
+    client = TestClient(api.app)
+
+    monkeypatch.setattr(
+        api,
+        "load_wav_mono_bytes",
+        lambda _bytes: (12345, np.zeros(2 * 12345, dtype=np.float32)),
+    )
+
+    res = client.post(
+        "/identify",
+        files={"file": ("sample.wav", b"fake-wav", "audio/wav")},
+    )
+
+    assert res.status_code == 400
+    assert "unsupported sample rate" in res.json()["detail"].lower()
 
 
 def test_identify_respects_upload_size_limit(tmp_path):

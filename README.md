@@ -41,6 +41,7 @@ The backend:
 
 - Inserted songs must be **1-5 minutes** long
 - Identify samples must be **≤ 15 seconds**
+- Accepted input sample rates: **8000, 11025, 16000, 22050, 32000, 44100, 48000 Hz**
 - Upload size is limited by `MAX_UPLOAD_BYTES` (default **50 MB**)
 - Maximum number of songs can be capped via `MAX_SONGS` (unset by default => no cap)
 

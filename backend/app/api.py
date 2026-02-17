@@ -8,7 +8,12 @@ import os
 from fastapi import FastAPI, File, HTTPException, UploadFile, Header
 from fastapi.middleware.cors import CORSMiddleware
 
-from fingerprinter import AudioClip, Fingerprinter, load_wav_mono_bytes
+from fingerprinter import (
+    AudioClip,
+    Fingerprinter,
+    UnsupportedSampleRateError,
+    load_wav_mono_bytes,
+)
 from matcher import find_best_match
 from storage import (
     SongAlreadyExistsError,
@@ -145,6 +150,11 @@ def insert_song_endpoint(
             status_code=409,
             detail=f"Song '{name}' already exists.",
         )
+    except UnsupportedSampleRateError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
     except HTTPException:
         raise
     except Exception as exc:
@@ -179,6 +189,11 @@ def identify_song_endpoint(
             db_path=DB_PATH,
             fingerprinter=FINGERPRINTER,
         )
+    except UnsupportedSampleRateError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        ) from exc
     except HTTPException:
         raise
     except Exception as exc:

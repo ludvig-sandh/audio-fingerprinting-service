@@ -9,6 +9,10 @@ from scipy.signal import resample_poly, spectrogram
 from scipy.ndimage import maximum_filter
 
 
+class UnsupportedSampleRateError(ValueError):
+    pass
+
+
 def _to_mono_float(data: np.ndarray) -> np.ndarray:
     if data.ndim == 1:
         mono = data.astype(np.float32)
@@ -177,6 +181,7 @@ class AudioClip:
 @dataclass(frozen=True)
 class FingerprinterConfig:
     target_rate: int = 11_025
+    allowed_input_rates: tuple[int, ...] = (8_000, 11_025, 16_000, 22_050, 32_000, 44_100, 48_000)
     nperseg: int = 2048
     noverlap: int = 1536
     neighborhood_size: int = 20
@@ -193,6 +198,12 @@ class FingerprinterConfig:
             raise ValueError("Invalid config: noverlap must be < nperseg.")
         if self.target_rate <= 0:
             raise ValueError("Invalid config: target_rate must be > 0.")
+        if self.target_rate not in self.allowed_input_rates:
+            raise ValueError("Invalid config: target_rate must be one of allowed_input_rates.")
+        if not self.allowed_input_rates:
+            raise ValueError("Invalid config: allowed_input_rates must not be empty.")
+        if any(rate <= 0 for rate in self.allowed_input_rates):
+            raise ValueError("Invalid config: allowed_input_rates values must be > 0.")
 
 
 class Fingerprinter:
@@ -208,7 +219,12 @@ class Fingerprinter:
         mono, trim_start = trim_silence(audio)
         trim_offset_seconds = trim_start / sample_rate
 
-        # TODO: Only allow common sample rates so this doesn't blow up CPU
+        if sample_rate not in self.config.allowed_input_rates:
+            allowed = ", ".join(str(rate) for rate in self.config.allowed_input_rates)
+            raise UnsupportedSampleRateError(
+                f"Unsupported sample rate {sample_rate}. Allowed sample rates: {allowed}."
+            )
+
         if sample_rate != self.config.target_rate:
             from math import gcd
 
