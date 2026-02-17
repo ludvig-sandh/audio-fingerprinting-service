@@ -7,7 +7,7 @@ Deploy by cloning the repository, building the Docker image, and running the con
 
 ## Demo
 
-Live demo that even works on your phone: `https://ludvig-sandh.github.io/audio-fingerprinting-service/`
+Live demo that even works on your phone: [https://ludvig-sandh.github.io/audio-fingerprinting-service/](https://ludvig-sandh.github.io/audio-fingerprinting-service/)
 
 I deployed the system on a cheap server and inserted a small set of songs so anyone can test the system through the link above. As a Swede, I thought ABBA songs were fitting.
 
